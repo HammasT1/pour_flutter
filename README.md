@@ -297,6 +297,4 @@ it.
 
 ## 📄 License
 
-No license has been specified yet for this project. Add a `LICENSE` file
-and update this section before distributing or accepting external
-contributions.
+No license has been specified yet for this project.
