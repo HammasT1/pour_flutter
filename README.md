@@ -38,16 +38,11 @@ the screen wash in the drink's color, and bubbles rise like a cold-drink ad.
 
 ## 📸 Screenshots
 
-<!--
-Drop images in docs/screenshots/ and reference them here, e.g.:
 <p align="center">
-  <img src="docs/screenshots/carousel.png" width="220" />
-  <img src="docs/screenshots/pour.png" width="220" />
-  <img src="docs/screenshots/full.png" width="220" />
+  <img src="assets/carousel.png" width="220" />
+  <img src="assets/pour.png" width="220" />
+  <img src="assets/fill_screen.png" width="220" />
 </p>
--->
-
-*Coming soon.*
 
 ## 🎬 Demo
 
