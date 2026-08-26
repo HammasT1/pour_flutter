@@ -46,9 +46,9 @@ the screen wash in the drink's color, and bubbles rise like a cold-drink ad.
 
 ## 🎬 Demo
 
-<!-- Drop a GIF at docs/demo.gif and reference it here, e.g. ![demo](docs/demo.gif) -->
-
-*Coming soon.*
+<p align="center">
+  <img src="https://github.com/HammasT1/pour_flutter/blob/main/assets/pour_flutter-GIF.gif?raw=true" width="280" />
+</p>
 
 ---
 
