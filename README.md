@@ -1,54 +1,62 @@
 <div align="center">
 
-# 🥤 Pour
+<img src="https://capsule-render.vercel.app/api?type=waving&height=240&color=0:FF6B00,50:E91E63,100:7B1FA2&text=Pour&fontColor=ffffff&fontSize=80&fontAlignY=36&animation=fadeIn&desc=A%20dark%2C%20animation-driven%20drink-pouring%20experience&descSize=18&descAlignY=58" alt="Pour" width="100%" />
 
-**A dark, animation-driven drink-pouring experience built with Flutter.**
+<a href="https://github.com/HammasT1/pour_flutter">
+  <img src="https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=600&size=22&duration=3000&pause=900&color=FF6B00&center=true&vCenter=true&width=620&lines=Swipe+through+the+bottles+%F0%9F%A5%A4;Pick+a+cup+size+%F0%9F%93%8F;Tap+to+pour+%E2%80%94+watch+it+fill+%F0%9F%AB%97;Built+with+Flutter+%26+Riverpod+%F0%9F%92%99" alt="Typing animation" />
+</a>
 
-Swipe through bottles, pick a cup size, tap to pour — watch the cup fill,
-the screen wash in the drink's color, and bubbles rise like a cold-drink ad.
+<br/>
 
-![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=flat&logo=flutter&logoColor=white)
-![Dart](https://img.shields.io/badge/Dart-3.12-0175C2?style=flat&logo=dart&logoColor=white)
-![State](https://img.shields.io/badge/State-Riverpod-4051B5?style=flat)
-![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Web%20%7C%20Windows-informational?style=flat)
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow?style=flat)
+![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-3.12-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![Riverpod](https://img.shields.io/badge/State-Riverpod-4051B5?style=for-the-badge)
+![Platform](https://img.shields.io/badge/Android%20%7C%20Web%20%7C%20Windows-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![Status](https://img.shields.io/badge/Status-In%20Development-F9A825?style=for-the-badge)
+
+<p>
+  <a href="#-demo"><b>Demo</b></a> ·
+  <a href="#-features"><b>Features</b></a> ·
+  <a href="#-getting-started"><b>Get Started</b></a> ·
+  <a href="#%EF%B8%8F-architecture"><b>Architecture</b></a> ·
+  <a href="#-contributing"><b>Contribute</b></a>
+</p>
 
 </div>
 
----
+<br/>
 
-## 📑 Table of Contents
-
-- [Screenshots](#screenshots)
-- [Demo](#demo)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Customization](#customization)
-  - [Dropping in real assets](#dropping-in-real-assets)
-  - [Tuning the cup art alignment](#tuning-the-cup-art-alignment)
-- [Architecture](#architecture)
-  - [How cup size affects fill math](#how-cup-size-affects-fill-math)
-  - [How state flows](#how-state-flows)
-- [Contributing](#contributing)
-- [License](#license)
+> Swipe through bottles, pick a cup size, tap to pour — watch the cup fill, the screen wash in the drink's color, and bubbles rise like a cold-drink ad.
 
 ---
-
-## 📸 Screenshots
-
-<p align="center">
-  <img src="assets/carousel.png" width="220" />
-  <img src="assets/pour.png" width="220" />
-  <img src="assets/fill_screen.png" width="220" />
-</p>
 
 ## 🎬 Demo
 
+<table align="center">
+  <tr>
+    <td align="center" width="33%"><img src="assets/carousel.png" width="220" /><br/><sub><b>Pick a drink</b></sub></td>
+    <td align="center" width="33%"><img src="assets/pour.png" width="220" /><br/><sub><b>Tap to pour</b></sub></td>
+    <td align="center" width="33%"><img src="assets/fill_screen.png" width="220" /><br/><sub><b>Color wash</b></sub></td>
+  </tr>
+</table>
+
 <p align="center">
-  <img src="https://github.com/HammasT1/pour_flutter/blob/main/assets/pour_flutter-GIF.gif?raw=true" width="280" />
+  <img src="https://github.com/HammasT1/pour_flutter/blob/main/assets/pour_flutter-GIF.gif?raw=true" width="280" alt="Pour demo" />
 </p>
+
+<details>
+<summary><b>📑 Table of Contents</b></summary>
+
+- [Features](#-features)
+- [Tech Stack](#️-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started](#-getting-started)
+- [Customization](#-customization)
+- [Architecture](#️-architecture)
+- [Contributing](#-contributing)
+- [License](#-license)
+
+</details>
 
 ---
 
@@ -290,6 +298,20 @@ it.
 5. Open a PR describing what changed and why. Screenshots or a short GIF
    are appreciated for anything visual.
 
+---
+
 ## 📄 License
 
 No license has been specified yet for this project.
+
+<br/>
+
+<div align="center">
+
+**Made with 💙 and Flutter by [Muhammad Hammas Rasheed](https://github.com/HammasT1)**
+
+⭐ If you like Pour, give it a star!
+
+<img src="https://capsule-render.vercel.app/api?type=waving&height=120&color=0:FF6B00,50:E91E63,100:7B1FA2&section=footer" width="100%" alt="" />
+
+</div>
