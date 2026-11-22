@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -41,6 +42,18 @@ class PourApp extends StatelessWidget {
           brightness: Brightness.dark,
         ),
         textTheme: GoogleFonts.outfitTextTheme(ThemeData(brightness: Brightness.dark).textTheme),
+        // Material "shared axis (Z)" for every route: the new screen scales
+        // up out of the old one, which reads as going *into* the item -
+        // and leaves Heroes free to fly on top.
+        pageTransitionsTheme: PageTransitionsTheme(
+          builders: {
+            for (final platform in TargetPlatform.values)
+              platform: const SharedAxisPageTransitionsBuilder(
+                transitionType: SharedAxisTransitionType.scaled,
+                fillColor: Color(0xFF0B0D10),
+              ),
+          },
+        ),
       ),
       home: const PourScreen(),
     );

@@ -35,6 +35,11 @@ class DrinkModel {
 
   /// Foam head color: the drink's highlight washed toward white, so cola
   /// gets a tan head and the orange/green/grape drinks a pale tinted one.
+  /// Hero tags shared by the carousel / nav bar and the drink showcase,
+  /// so the bottle and name badge fly between the two screens.
+  String get bottleHeroTag => 'bottle-$id';
+  String get badgeHeroTag => 'badge-$id';
+
   Color get foamColor => Color.lerp(highlightColor, const Color(0xFFFFFFFF), 0.62)!;
 }
 

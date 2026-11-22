@@ -99,10 +99,13 @@ class _Bottle extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget bottle = SizedBox(
       height: 200,
-      child: SafeAssetImage(
-        assetPath: drink.assetPath,
-        fallbackIcon: Icons.local_drink_outlined,
-        fallbackLabel: drink.name,
+      child: Hero(
+        tag: drink.bottleHeroTag,
+        child: SafeAssetImage(
+          assetPath: drink.assetPath,
+          fallbackIcon: Icons.local_drink_outlined,
+          fallbackLabel: drink.name,
+        ),
       ),
     );
 

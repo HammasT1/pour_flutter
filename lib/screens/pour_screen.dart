@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -24,6 +25,7 @@ import '../widgets/empty_cup_button.dart';
 import '../widgets/fill_readout.dart';
 import '../widgets/liquid_stream.dart';
 import '../widgets/pour_nav_bar.dart';
+import 'drink_detail_screen.dart';
 
 class PourScreen extends ConsumerStatefulWidget {
   const PourScreen({super.key});
@@ -68,6 +70,10 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   bool _spilledThisPour = false;
   bool _spillCooling = false; // one spill per animation, even if foam keeps pushing
   int _spillTrigger = 0;
+
+  /// Direction of the last mode switch, so the shared-axis slide under the
+  /// cup moves left or right to match the Free / Practice / Daily order.
+  bool _modeReverse = false;
 
   @override
   void initState() {
@@ -354,7 +360,28 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     if (ref.read(pourStateProvider).isPouring) return;
     HapticFeedback.selectionClick();
     _resetCup();
+    _modeReverse = mode.index < ref.read(challengeProvider).mode.index;
     ref.read(challengeProvider.notifier).setMode(mode);
+  }
+
+  void _openDrinkDetails() {
+    final state = ref.read(pourStateProvider);
+    if (state.isPouring) return;
+    HapticFeedback.selectionClick();
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => DrinkDetailScreen(
+          initialIndex: state.selectedDrinkIndex,
+          onPour: (index) {
+            // Land the carousel on the chosen drink before the route pops,
+            // so the bottle Hero flies back to the center slot.
+            if (index != ref.read(pourStateProvider).selectedDrinkIndex && _pageController.hasClients) {
+              _pageController.jumpToPage(index);
+            }
+          },
+        ),
+      ),
+    );
   }
 
   void _handleLockIn() {
@@ -430,7 +457,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                   const SizedBox(height: 12),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: PourNavBar(drink: drink),
+                    child: PourNavBar(drink: drink, onDrinkTap: state.isPouring ? null : _openDrinkDetails),
                   ),
                   const SizedBox(height: 10),
                   ModeSwitcher(
@@ -545,34 +572,49 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                     concealed: challenge.isChallenge && challenge.result == null,
                   ),
                   const SizedBox(height: 6),
-                  if (!challenge.isChallenge)
-                    AnimatedOpacity(
-                      duration: const Duration(milliseconds: 250),
-                      opacity: state.fillLevel <= 0.001 && !state.isPouring ? 1 : 0,
-                      child: const Text(
-                        'TAP TO POUR  ·  HOLD FOR A PERFECT POUR',
-                        style: TextStyle(
-                          color: Colors.white30,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.4,
-                        ),
-                      ),
+                  // Free / Practice / Daily slide along a shared X axis.
+                  PageTransitionSwitcher(
+                    reverse: _modeReverse,
+                    duration: const Duration(milliseconds: 380),
+                    layoutBuilder: (entries) => Stack(alignment: Alignment.topCenter, children: entries),
+                    transitionBuilder: (child, primary, secondary) => SharedAxisTransition(
+                      animation: primary,
+                      secondaryAnimation: secondary,
+                      transitionType: SharedAxisTransitionType.horizontal,
+                      fillColor: Colors.transparent,
+                      child: child,
                     ),
-                  if (challenge.isChallenge)
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 220),
-                      child: challenge.dailyFinished
-                          ? DailySummaryCard(key: const ValueKey('summary'), state: challenge)
-                          : challenge.result != null
-                          ? RoundResultCard(
-                              key: ValueKey('result-${challenge.round}'),
-                              result: challenge.result!,
-                              streak: challenge.streak,
-                              bestStreak: challenge.bestStreak,
+                    child: KeyedSubtree(
+                      key: ValueKey(challenge.mode),
+                      child: !challenge.isChallenge
+                          ? AnimatedOpacity(
+                              duration: const Duration(milliseconds: 250),
+                              opacity: state.fillLevel <= 0.001 && !state.isPouring ? 1 : 0,
+                              child: const Text(
+                                'TAP TO POUR  ·  HOLD FOR A PERFECT POUR',
+                                style: TextStyle(
+                                  color: Colors.white30,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 1.4,
+                                ),
+                              ),
                             )
-                          : ChallengeHud(key: ValueKey('hud-${challenge.round}'), state: challenge),
+                          : AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 220),
+                              child: challenge.dailyFinished
+                                  ? DailySummaryCard(key: const ValueKey('summary'), state: challenge)
+                                  : challenge.result != null
+                                  ? RoundResultCard(
+                                      key: ValueKey('result-${challenge.round}'),
+                                      result: challenge.result!,
+                                      streak: challenge.streak,
+                                      bestStreak: challenge.bestStreak,
+                                    )
+                                  : ChallengeHud(key: ValueKey('hud-${challenge.round}'), state: challenge),
+                            ),
                     ),
+                  ),
                   const SizedBox(height: 10),
                   CupExtrasBar(
                     iceCubes: state.iceCubes,
