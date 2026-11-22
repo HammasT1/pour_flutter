@@ -24,11 +24,21 @@ class CupWithLiquid extends StatelessWidget {
   final CupSizeConfig cupConfig;
   final double fillLevel;
 
+  /// How long the liquid takes to ease to a new [fillLevel]. Long for a
+  /// tap pour (one visible "glug"), short during hold-to-pour so the
+  /// liquid tracks the live level the player is judging.
+  final Duration fillDuration;
+
+  /// Shows the perfect-pour band near the brim (during a hold-to-pour).
+  final bool showPerfectZone;
+
   const CupWithLiquid({
     super.key,
     required this.drink,
     required this.cupConfig,
     required this.fillLevel,
+    this.fillDuration = const Duration(milliseconds: 900),
+    this.showPerfectZone = false,
   });
 
   @override
@@ -54,7 +64,7 @@ class CupWithLiquid extends StatelessWidget {
               ),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: fillLevel),
-                duration: const Duration(milliseconds: 900),
+                duration: fillDuration,
                 curve: Curves.easeOutCubic,
                 builder: (context, animatedFill, _) {
                   return ClipPath(
@@ -67,6 +77,16 @@ class CupWithLiquid extends StatelessWidget {
                           top: CupFillGeometry.topY * h,
                           height: (CupFillGeometry.bottomY - CupFillGeometry.topY) * h,
                           child: _LiquidLayer(fillFraction: animatedFill, drink: drink),
+                        ),
+                        Positioned(
+                          left: 0,
+                          right: 0,
+                          top: CupFillGeometry.topY * h,
+                          height: (CupFillGeometry.bottomY - CupFillGeometry.topY) * h,
+                          child: _PerfectZoneBand(
+                            visible: showPerfectZone,
+                            inZone: animatedFill >= kPerfectPourMin && animatedFill <= kPerfectPourMax,
+                          ),
                         ),
                       ],
                     ),
@@ -122,6 +142,52 @@ class _LiquidLayer extends StatelessWidget {
               ),
             ),
           ),
+    );
+  }
+}
+
+/// Faint band marking the perfect-pour window near the brim, positioned
+/// in the same fill-fraction space as [LiquidSurfacePainter] (0 = bottom
+/// of the fillable region, 1 = top). Brightens while the liquid sits in
+/// the window, so the player knows when to let go.
+class _PerfectZoneBand extends StatelessWidget {
+  final bool visible;
+  final bool inZone;
+
+  const _PerfectZoneBand({required this.visible, required this.inZone});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 200),
+        opacity: visible ? 1 : 0,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final regionH = constraints.maxHeight;
+            final top = (1 - kPerfectPourMax) * regionH;
+            final height = (kPerfectPourMax - kPerfectPourMin) * regionH;
+            final line = Colors.white.withValues(alpha: inZone ? 0.95 : 0.45);
+            return Stack(
+              children: [
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  top: top,
+                  height: height,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: inZone ? 0.28 : 0.10),
+                      border: Border.symmetric(horizontal: BorderSide(color: line, width: 1)),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 }

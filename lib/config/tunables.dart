@@ -59,12 +59,42 @@ const double kPourStreamAreaHeight = 64.0;
 /// (combined with the pivot alignment in BottleCarousel) swings the
 /// bottle's mouth down and toward the cup.
 const double kMaxTiltAngle = 0.88; // radians
-const Duration kTiltDuration = Duration(milliseconds: 900);
 
 /// Liquid poured per tap, in the same "units" as
 /// CupSizeConfig.capacityUnits. Kept roughly constant per tap so a bigger
 /// cup visibly needs more pours to fill.
 const double kPourVolumeUnits = 90.0;
+
+/// How long the active bottle must be held before a tap turns into a
+/// continuous hold-to-pour. Short enough to feel instant, long enough
+/// that a quick tap (and a horizontal carousel drag) still wins.
+const Duration kHoldToPourDelay = Duration(milliseconds: 180);
+
+/// Time for the bottle to tip into pouring position at the start of a
+/// hold, and to return upright after release.
+const Duration kHoldTiltInDuration = Duration(milliseconds: 320);
+const Duration kHoldTiltOutDuration = Duration(milliseconds: 300);
+
+/// Hold-to-pour flow rate, as a fraction of the *current* cup's capacity
+/// per second. Expressed relative to capacity (not in ml) so the
+/// perfect-pour window is equally fair on every cup size. The flow eases
+/// from [kHoldFlowStartRate] up to [kHoldFlowMaxRate] over
+/// [kHoldFlowRampDuration] - the longer you hold, the harder it pours.
+const double kHoldFlowStartRate = 0.20;
+const double kHoldFlowMaxRate = 0.48;
+const Duration kHoldFlowRampDuration = Duration(milliseconds: 1600);
+
+/// Pour stream width (logical px) at the start of a hold and at full
+/// flow. A tap pour uses [kTapStreamWidth].
+const double kHoldStreamMinWidth = 5.0;
+const double kHoldStreamMaxWidth = 12.0;
+const double kTapStreamWidth = 7.0;
+
+/// Releasing a hold-pour with the cup between these fill levels (0..1)
+/// counts as a "perfect pour". The cup actually topping out (>= 0.999)
+/// is a full cup, not a perfect one.
+const double kPerfectPourMin = 0.90;
+const double kPerfectPourMax = 0.99;
 
 /// Background wash opacity (0..1) while the cup holds liquid but isn't
 /// actively being poured into - the wash ramps up to full intensity

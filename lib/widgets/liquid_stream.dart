@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 /// A thin animated rounded rect representing the pour stream, fading in
 /// from the bottle mouth down to the cup's current rim position. Its
 /// length is passed in by the caller, already recalculated for the
-/// active cup size.
+/// active cup size. [width] grows during a hold-to-pour as the flow
+/// ramps up.
 class LiquidStream extends StatelessWidget {
   final bool visible;
   final double height;
   final Color color;
   final Color highlightColor;
+  final double width;
 
   const LiquidStream({
     super.key,
@@ -16,6 +18,7 @@ class LiquidStream extends StatelessWidget {
     required this.height,
     required this.color,
     required this.highlightColor,
+    this.width = 7,
   });
 
   @override
@@ -27,7 +30,7 @@ class LiquidStream extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOut,
-          width: 7,
+          width: width,
           height: visible ? height : height * 0.15,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(6),

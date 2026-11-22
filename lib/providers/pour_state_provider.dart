@@ -66,6 +66,16 @@ class PourStateNotifier extends StateNotifier<PourState> {
     state = state.copyWith(fillLevel: next);
   }
 
+  /// Continuous hold-to-pour: adds [fraction] of the current cup's
+  /// capacity (already scaled by frame time by the caller) and returns
+  /// the new fill level.
+  double addFillFraction(double fraction) {
+    if (fraction <= 0) return state.fillLevel;
+    final next = (state.fillLevel + fraction).clamp(0.0, 1.0);
+    state = state.copyWith(fillLevel: next);
+    return next;
+  }
+
   void endPour() {
     state = state.copyWith(isPouring: false);
   }

@@ -7,13 +7,21 @@ class FillReadout extends StatelessWidget {
   final double fillLevel;
   final double capacityUnits;
 
-  const FillReadout({super.key, required this.fillLevel, required this.capacityUnits});
+  /// Shortened during a hold-to-pour so the number tracks the live level.
+  final Duration duration;
+
+  const FillReadout({
+    super.key,
+    required this.fillLevel,
+    required this.capacityUnits,
+    this.duration = const Duration(milliseconds: 900),
+  });
 
   @override
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: fillLevel.clamp(0.0, 1.0)),
-      duration: const Duration(milliseconds: 900),
+      duration: duration,
       curve: Curves.easeOutCubic,
       builder: (context, animatedFill, _) {
         final ml = (animatedFill * capacityUnits).round();

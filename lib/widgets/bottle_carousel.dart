@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../config/tunables.dart';
 import '../models/drink_model.dart';
 import 'pressable_scale.dart';
 import 'safe_asset_image.dart';
@@ -8,7 +9,8 @@ import 'safe_asset_image.dart';
 /// PageView-driven carousel: the center bottle renders full size and
 /// sharp, side bottles shrink and dim based on distance from center.
 /// Drag anywhere to slide between drinks; tapping the centered bottle
-/// pours it, and tapping a side bottle brings it to center (a mouse
+/// pours it, holding it pours continuously until release, and tapping
+/// a side bottle brings it to center (a mouse
 /// drag also works - see [PourScrollBehavior] in main.dart, which is
 /// what actually makes web/desktop mouse-dragging possible at all).
 class BottleCarousel extends StatelessWidget {
@@ -18,6 +20,8 @@ class BottleCarousel extends StatelessWidget {
   final bool isPouring;
   final ValueChanged<int> onPageSettled;
   final VoidCallback onTapActiveBottle;
+  final VoidCallback onHoldActiveBottleStart;
+  final VoidCallback onHoldActiveBottleEnd;
 
   const BottleCarousel({
     super.key,
@@ -27,6 +31,8 @@ class BottleCarousel extends StatelessWidget {
     required this.isPouring,
     required this.onPageSettled,
     required this.onTapActiveBottle,
+    required this.onHoldActiveBottleStart,
+    required this.onHoldActiveBottleEnd,
   });
 
   @override
@@ -66,6 +72,9 @@ class BottleCarousel extends StatelessWidget {
                           duration: const Duration(milliseconds: 380),
                           curve: Curves.easeOutCubic,
                         ),
+                  onHoldStart: isActive ? onHoldActiveBottleStart : null,
+                  onHoldEnd: isActive ? onHoldActiveBottleEnd : null,
+                  holdDelay: kHoldToPourDelay,
                   child: child!,
                 ),
               ),

@@ -64,6 +64,7 @@
 
 - **Swipeable bottle carousel** — four drinks, center bottle sharp and full-size, side bottles dimmed and scaled down; drag, or tap a side bottle to bring it to center.
 - **Tilt-to-pour animation** — the centered bottle tips toward the cup, a liquid stream falls, and the cup fills to a level computed from real fill math (see [below](#how-cup-size-affects-fill-math)).
+- **Hold-to-pour + perfect pour** — tap for a single pour, or hold the bottle to pour non-stop; the flow and stream thicken the longer you hold. A band near the brim lights up while you pour, and releasing inside it earns a **PERFECT POUR** badge, haptic pulse and bubble burst.
 - **Three cup sizes (S / M / L)** — each with its own capacity; switching size resizes the cup with a spring animation and always starts it empty.
 - **Full-screen color wash + ambient bubbles** — the whole screen tints in the drink's brand color while there's liquid in the cup, with bubbles drifting up across the screen, cold-drink-ad style.
 - **"Cup full" celebration** — a haptic pulse and a badge animation when a pour tops off the cup.
