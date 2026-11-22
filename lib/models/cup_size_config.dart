@@ -16,11 +16,15 @@ class CupSizeConfig {
   /// [kPourVolumeUnits] is measured in (e.g. millilitres).
   final double capacityUnits;
 
+  /// How many ice cubes fit in this size.
+  final int maxIceCubes;
+
   const CupSizeConfig({
     required this.size,
     required this.label,
     required this.scale,
     required this.capacityUnits,
+    required this.maxIceCubes,
   });
 
   double get displayHeight => kCupBaseDisplayHeight * scale;
@@ -39,17 +43,20 @@ const Map<CupSize, CupSizeConfig> kCupSizes = {
     label: 'S',
     scale: 0.75,
     capacityUnits: 150,
+    maxIceCubes: 2,
   ),
   CupSize.medium: CupSizeConfig(
     size: CupSize.medium,
     label: 'M',
     scale: 1.0,
     capacityUnits: 250,
+    maxIceCubes: 3,
   ),
   CupSize.large: CupSizeConfig(
     size: CupSize.large,
     label: 'L',
     scale: 1.3,
     capacityUnits: 400,
+    maxIceCubes: 4,
   ),
 };

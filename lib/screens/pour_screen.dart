@@ -15,6 +15,7 @@ import '../widgets/background_wash.dart';
 import '../widgets/bottle_carousel.dart';
 import '../widgets/bubble_particles.dart';
 import '../widgets/carousel_dots.dart';
+import '../widgets/cup_extras_bar.dart';
 import '../widgets/cup_size_selector.dart';
 import '../widgets/cup_with_liquid.dart';
 import '../widgets/empty_cup_button.dart';
@@ -85,7 +86,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
   bool get _canStartPour {
     final state = ref.read(pourStateProvider);
-    return !state.isPouring && state.fillLevel < 0.999;
+    return !state.isPouring && state.effectiveLevel < 0.999;
   }
 
   void _showBanner(_PourBanner banner) {
@@ -118,8 +119,8 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     _ensureFoamTicker();
 
     final after = ref.read(pourStateProvider);
-    final willOverflow = after.fillLevel + after.foamLevel + _pendingFoam > 1.0 + kSpillTolerance;
-    if (after.fillLevel >= 0.999 && !willOverflow) {
+    final willOverflow = after.effectiveLevel + after.foamLevel + _pendingFoam > 1.0 + kSpillTolerance;
+    if (after.effectiveLevel >= 0.999 && !willOverflow) {
       HapticFeedback.heavyImpact();
       _showBanner(_PourBanner.full);
     }
@@ -196,7 +197,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
       if (spawnBubbles) _bubbleTrigger++;
     });
 
-    if (_holding && level >= 0.999) _finishHold();
+    if (_holding && ref.read(pourStateProvider).effectiveLevel >= 0.999) _finishHold();
   }
 
   DrinkModel get _activeDrink => kDrinks[ref.read(pourStateProvider).selectedDrinkIndex];
@@ -232,7 +233,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
     foam -= foam * kFoamSettleRate * dt;
 
-    final room = (1.0 - state.fillLevel).clamp(0.0, 1.0);
+    final room = (1.0 - state.effectiveLevel).clamp(0.0, 1.0);
     if (foam > room + kSpillTolerance) {
       foam = room;
       _triggerSpill();
@@ -273,7 +274,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     _holdTicker?.dispose();
     _holdTicker = null;
 
-    final level = ref.read(pourStateProvider).fillLevel;
+    final level = ref.read(pourStateProvider).effectiveLevel;
     setState(() {
       _streamVisible = false;
       _holdFlow = 0;
@@ -299,10 +300,45 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
   void _handleEmptyCup() {
     final state = ref.read(pourStateProvider);
-    if (state.isPouring || state.fillLevel <= 0.0) return;
+    if (state.isPouring || (state.fillLevel <= 0.0 && state.iceCubes == 0)) return;
     HapticFeedback.lightImpact();
     _pendingFoam = 0;
     ref.read(pourStateProvider.notifier).emptyCup();
+  }
+
+  /// Drops a cube in. It lands ~a third of the way through its fall:
+  /// that's when it splashes (bubbles + haptic), kicks up a little foam
+  /// in a fizzy drink, and - if the cup was already brim-full - spills.
+  void _handleAddIce() {
+    final notifier = ref.read(pourStateProvider.notifier);
+    final before = ref.read(pourStateProvider).iceCubes;
+    final spilled = notifier.addIce();
+    if (ref.read(pourStateProvider).iceCubes == before) return;
+    HapticFeedback.selectionClick();
+
+    final landMs = (kIceDropDuration.inMilliseconds * kIceFirstContact).round();
+    Future.delayed(Duration(milliseconds: landMs), () {
+      if (!mounted) return;
+      final s = ref.read(pourStateProvider);
+      if (s.fillLevel <= 0.001) {
+        HapticFeedback.lightImpact();
+        return;
+      }
+      HapticFeedback.mediumImpact();
+      setState(() => _bubbleTrigger++);
+      if (spilled) {
+        _triggerSpill();
+      } else {
+        _pendingFoam += _activeDrink.fizziness * kTapFoamBurst * 0.5;
+        _pendingFoamDelay = 0;
+        _ensureFoamTicker();
+      }
+    });
+  }
+
+  void _handleToggleStraw() {
+    HapticFeedback.selectionClick();
+    ref.read(pourStateProvider.notifier).toggleStraw();
   }
 
   @override
@@ -398,11 +434,13 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                         CupWithLiquid(
                           drink: drink,
                           cupConfig: cupConfig,
-                          fillLevel: state.fillLevel,
+                          fillLevel: state.effectiveLevel,
                           fillDuration: fillDuration,
                           showPerfectZone: _holdActive,
                           foamLevel: state.foamLevel,
                           spillTrigger: _spillTrigger,
+                          iceCubes: state.iceCubes,
+                          hasStraw: state.hasStraw,
                         ),
                         Positioned(
                           bottom: rimFromStageBottom - 4,
@@ -464,7 +502,20 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                     ),
                   ),
                   const SizedBox(height: 10),
-                  EmptyCupButton(visible: state.fillLevel > 0.001 && !state.isPouring, onTap: _handleEmptyCup),
+                  CupExtrasBar(
+                    iceCubes: state.iceCubes,
+                    maxIceCubes: cupConfig.maxIceCubes,
+                    hasStraw: state.hasStraw,
+                    enabled: !state.isPouring,
+                    accent: drink.screenColor,
+                    onAddIce: _handleAddIce,
+                    onToggleStraw: _handleToggleStraw,
+                  ),
+                  const SizedBox(height: 10),
+                  EmptyCupButton(
+                    visible: (state.fillLevel > 0.001 || state.iceCubes > 0) && !state.isPouring,
+                    onTap: _handleEmptyCup,
+                  ),
                   const SizedBox(height: 20),
                 ],
               ),

@@ -140,3 +140,31 @@ const double kSpillTolerance = 0.004;
 
 /// Length of the spill animation (foam cap, drips, puddle).
 const Duration kSpillDuration = Duration(milliseconds: 1600);
+
+/// ---- Ice & straw ----
+
+/// Ice cube side length as a fraction of the cup's bounding-box width
+/// (the cup scales uniformly, so cubes stay proportional at every size).
+const double kIceCubeSize = 0.17;
+
+/// Cube height as a fraction of the fillable region's height - derived
+/// from [kIceCubeSize] and the fill geometry for the square cup canvas.
+const double kIceCubeHeightFraction = kIceCubeSize * kCupAspectRatio / (CupFillGeometry.bottomY - CupFillGeometry.topY);
+
+/// Ice floats with this fraction of its height under the surface.
+const double kIceSubmergedFraction = 0.88;
+
+/// Liquid displaced by one fully floating cube, as a fraction of the
+/// cup's capacity. Less liquid fits in a cup full of ice, and the
+/// liquid line rises as each cube goes in.
+const double kIceDisplacement = 0.045;
+
+/// Fall + bounce animation for a cube dropped into the cup, and when in
+/// that animation it first hits (bottom or surface) - used to time the
+/// splash haptic and bubbles.
+const Duration kIceDropDuration = Duration(milliseconds: 750);
+const double kIceFirstContact = 0.36;
+
+/// Horizontal shift (fraction of cup width) applied to the submerged
+/// part of the straw - the "bent straw" refraction break at the surface.
+const double kStrawRefractionShift = 0.045;

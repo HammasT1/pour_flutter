@@ -8,6 +8,7 @@ import '../config/tunables.dart';
 import '../models/cup_size_config.dart';
 import '../models/drink_model.dart';
 import 'safe_asset_image.dart';
+import 'ice_and_straw.dart';
 import 'spill_overlay.dart';
 
 /// Stacks an animated liquid layer on top of the cup art, clipped to the
@@ -39,6 +40,10 @@ class CupWithLiquid extends StatelessWidget {
   /// Bump to play the overflow animation.
   final int spillTrigger;
 
+  /// Ice cubes in the cup, and whether the straw is in.
+  final int iceCubes;
+  final bool hasStraw;
+
   const CupWithLiquid({
     super.key,
     required this.drink,
@@ -48,6 +53,8 @@ class CupWithLiquid extends StatelessWidget {
     this.showPerfectZone = false,
     this.foamLevel = 0.0,
     this.spillTrigger = 0,
+    this.iceCubes = 0,
+    this.hasStraw = false,
   });
 
   @override
@@ -62,6 +69,9 @@ class CupWithLiquid extends StatelessWidget {
           final h = constraints.maxHeight;
           return Stack(
             fit: StackFit.expand,
+            // The straw sticks up out of the cup and falling ice starts
+            // above the rim, so don't clip to the cup's box.
+            clipBehavior: Clip.none,
             children: [
               Opacity(
                 opacity: kCupOpacity,
@@ -76,7 +86,7 @@ class CupWithLiquid extends StatelessWidget {
                 duration: fillDuration,
                 curve: Curves.easeOutCubic,
                 builder: (context, animatedFill, _) {
-                  return ClipPath(
+                  final liquid = ClipPath(
                     clipper: const CupTrapezoidClipper(),
                     child: Stack(
                       children: [
@@ -99,6 +109,22 @@ class CupWithLiquid extends StatelessWidget {
                         ),
                       ],
                     ),
+                  );
+                  // Straw and ice ride the same animated liquid line so the
+                  // refraction break and floating cubes track the surface.
+                  return Stack(
+                    fit: StackFit.expand,
+                    clipBehavior: Clip.none,
+                    children: [
+                      liquid,
+                      StrawLayer(
+                        visible: hasStraw,
+                        level: animatedFill,
+                        stripeColor: drink.screenColor,
+                        liquidColor: drink.liquidColor,
+                      ),
+                      IceLayer(cubeCount: iceCubes, level: animatedFill, liquidColor: drink.liquidColor),
+                    ],
                   );
                 },
               ),
