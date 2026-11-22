@@ -10,11 +10,15 @@ class FillReadout extends StatelessWidget {
   /// Shortened during a hold-to-pour so the number tracks the live level.
   final Duration duration;
 
+  /// Hides the amount (challenge rounds are judged by eye).
+  final bool concealed;
+
   const FillReadout({
     super.key,
     required this.fillLevel,
     required this.capacityUnits,
     this.duration = const Duration(milliseconds: 900),
+    this.concealed = false,
   });
 
   @override
@@ -24,7 +28,7 @@ class FillReadout extends StatelessWidget {
       duration: duration,
       curve: Curves.easeOutCubic,
       builder: (context, animatedFill, _) {
-        final ml = (animatedFill * capacityUnits).round();
+        final ml = concealed ? '???' : '${(animatedFill * capacityUnits).round()}';
         return Text(
           '$ml / ${capacityUnits.round()} ml',
           style: const TextStyle(

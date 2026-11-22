@@ -8,6 +8,7 @@ import '../config/tunables.dart';
 import '../models/cup_size_config.dart';
 import '../models/drink_model.dart';
 import 'safe_asset_image.dart';
+import 'challenge_widgets.dart';
 import 'ice_and_straw.dart';
 import 'spill_overlay.dart';
 
@@ -44,6 +45,10 @@ class CupWithLiquid extends StatelessWidget {
   final int iceCubes;
   final bool hasStraw;
 
+  /// Challenge target line (0..1 of the fillable height); null hides it.
+  final double? targetLevel;
+  final Color targetColor;
+
   const CupWithLiquid({
     super.key,
     required this.drink,
@@ -55,6 +60,8 @@ class CupWithLiquid extends StatelessWidget {
     this.spillTrigger = 0,
     this.iceCubes = 0,
     this.hasStraw = false,
+    this.targetLevel,
+    this.targetColor = const Color(0xFFFFFFFF),
   });
 
   @override
@@ -128,6 +135,7 @@ class CupWithLiquid extends StatelessWidget {
                   );
                 },
               ),
+              TargetLine(level: targetLevel, color: targetColor),
               // Diagonal glass-shine highlight, clipped to the same
               // verified fillable region so it can never bleed onto the
               // transparent canvas around the cup art.

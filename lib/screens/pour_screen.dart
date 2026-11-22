@@ -9,12 +9,14 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../config/tunables.dart';
 import '../models/cup_size_config.dart';
 import '../models/drink_model.dart';
+import '../providers/challenge_provider.dart';
 import '../providers/pour_state_provider.dart';
 import '../widgets/ambient_bubbles.dart';
 import '../widgets/background_wash.dart';
 import '../widgets/bottle_carousel.dart';
 import '../widgets/bubble_particles.dart';
 import '../widgets/carousel_dots.dart';
+import '../widgets/challenge_widgets.dart';
 import '../widgets/cup_extras_bar.dart';
 import '../widgets/cup_size_selector.dart';
 import '../widgets/cup_with_liquid.dart';
@@ -86,7 +88,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
   bool get _canStartPour {
     final state = ref.read(pourStateProvider);
-    return !state.isPouring && state.effectiveLevel < 0.999;
+    return !state.isPouring && state.effectiveLevel < 0.999 && ref.read(challengeProvider).acceptingPours;
   }
 
   void _showBanner(_PourBanner banner) {
@@ -263,6 +265,10 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
     setState(() => _spillTrigger++);
     _showBanner(_PourBanner.overflow);
+    final challenge = ref.read(challengeProvider);
+    if (challenge.acceptingPours && challenge.isChallenge) {
+      ref.read(challengeProvider.notifier).recordSpill(ref.read(pourStateProvider).effectiveLevel);
+    }
     if (_holding) _finishHold();
   }
 
@@ -280,7 +286,8 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
       _holdFlow = 0;
     });
 
-    if (_holdPoured > 0 && !_spilledThisPour) {
+    // Challenge rounds are scored on LOCK IN instead.
+    if (_holdPoured > 0 && !_spilledThisPour && !ref.read(challengeProvider).isChallenge) {
       if (level >= 0.999) {
         HapticFeedback.heavyImpact();
         _showBanner(_PourBanner.full);
@@ -336,6 +343,45 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     });
   }
 
+  /// Empties the cup without the "Empty cup" haptic - used between
+  /// challenge rounds and when switching modes.
+  void _resetCup() {
+    _pendingFoam = 0;
+    ref.read(pourStateProvider.notifier).emptyCup();
+  }
+
+  void _handleModeChange(ChallengeMode mode) {
+    if (ref.read(pourStateProvider).isPouring) return;
+    HapticFeedback.selectionClick();
+    _resetCup();
+    ref.read(challengeProvider.notifier).setMode(mode);
+  }
+
+  void _handleLockIn() {
+    final pour = ref.read(pourStateProvider);
+    if (pour.isPouring || pour.effectiveLevel <= 0.001) return;
+    ref.read(challengeProvider.notifier).lockIn(pour.effectiveLevel);
+    final tier = ref.read(challengeProvider).result?.tier;
+    switch (tier) {
+      case ChallengeTier.bullseye:
+        HapticFeedback.heavyImpact();
+        Future.delayed(const Duration(milliseconds: 90), HapticFeedback.heavyImpact);
+        setState(() => _bubbleTrigger += 2);
+      case ChallengeTier.great:
+        HapticFeedback.mediumImpact();
+        setState(() => _bubbleTrigger++);
+      default:
+        HapticFeedback.lightImpact();
+    }
+  }
+
+  void _handleNextRound() {
+    if (ref.read(pourStateProvider).isPouring) return;
+    HapticFeedback.selectionClick();
+    _resetCup();
+    ref.read(challengeProvider.notifier).nextRound();
+  }
+
   void _handleToggleStraw() {
     HapticFeedback.selectionClick();
     ref.read(pourStateProvider.notifier).toggleStraw();
@@ -344,6 +390,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(pourStateProvider);
+    final challenge = ref.watch(challengeProvider);
     final drink = kDrinks[state.selectedDrinkIndex];
     final cupConfig = kCupSizes[state.selectedCupSize]!;
 
@@ -384,6 +431,13 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: PourNavBar(drink: drink),
+                  ),
+                  const SizedBox(height: 10),
+                  ModeSwitcher(
+                    mode: challenge.mode,
+                    enabled: !state.isPouring,
+                    accent: drink.screenColor,
+                    onChanged: _handleModeChange,
                   ),
                   const SizedBox(height: 8),
                   SizedBox(
@@ -436,11 +490,13 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                           cupConfig: cupConfig,
                           fillLevel: state.effectiveLevel,
                           fillDuration: fillDuration,
-                          showPerfectZone: _holdActive,
+                          showPerfectZone: _holdActive && !challenge.isChallenge,
                           foamLevel: state.foamLevel,
                           spillTrigger: _spillTrigger,
                           iceCubes: state.iceCubes,
                           hasStraw: state.hasStraw,
+                          targetLevel: challenge.target,
+                          targetColor: challenge.result?.tier.color ?? Colors.white,
                         ),
                         Positioned(
                           bottom: rimFromStageBottom - 4,
@@ -486,36 +542,69 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                     fillLevel: state.fillLevel,
                     capacityUnits: cupConfig.capacityUnits,
                     duration: fillDuration,
+                    concealed: challenge.isChallenge && challenge.result == null,
                   ),
                   const SizedBox(height: 6),
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 250),
-                    opacity: state.fillLevel <= 0.001 && !state.isPouring ? 1 : 0,
-                    child: const Text(
-                      'TAP TO POUR  ·  HOLD FOR A PERFECT POUR',
-                      style: TextStyle(
-                        color: Colors.white30,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.4,
+                  if (!challenge.isChallenge)
+                    AnimatedOpacity(
+                      duration: const Duration(milliseconds: 250),
+                      opacity: state.fillLevel <= 0.001 && !state.isPouring ? 1 : 0,
+                      child: const Text(
+                        'TAP TO POUR  ·  HOLD FOR A PERFECT POUR',
+                        style: TextStyle(
+                          color: Colors.white30,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.4,
+                        ),
                       ),
                     ),
-                  ),
+                  if (challenge.isChallenge)
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      child: challenge.dailyFinished
+                          ? DailySummaryCard(key: const ValueKey('summary'), state: challenge)
+                          : challenge.result != null
+                          ? RoundResultCard(
+                              key: ValueKey('result-${challenge.round}'),
+                              result: challenge.result!,
+                              streak: challenge.streak,
+                              bestStreak: challenge.bestStreak,
+                            )
+                          : ChallengeHud(key: ValueKey('hud-${challenge.round}'), state: challenge),
+                    ),
                   const SizedBox(height: 10),
                   CupExtrasBar(
                     iceCubes: state.iceCubes,
                     maxIceCubes: cupConfig.maxIceCubes,
                     hasStraw: state.hasStraw,
-                    enabled: !state.isPouring,
+                    enabled: !state.isPouring && challenge.acceptingPours,
                     accent: drink.screenColor,
                     onAddIce: _handleAddIce,
                     onToggleStraw: _handleToggleStraw,
                   ),
                   const SizedBox(height: 10),
-                  EmptyCupButton(
-                    visible: (state.fillLevel > 0.001 || state.iceCubes > 0) && !state.isPouring,
-                    onTap: _handleEmptyCup,
-                  ),
+                  if (!challenge.isChallenge)
+                    EmptyCupButton(
+                      visible: (state.fillLevel > 0.001 || state.iceCubes > 0) && !state.isPouring,
+                      onTap: _handleEmptyCup,
+                    )
+                  else if (challenge.result == null)
+                    ChallengeActionButton(
+                      label: 'LOCK IN',
+                      icon: Icons.lock_rounded,
+                      visible: state.effectiveLevel > 0.001 && !state.isPouring,
+                      accent: drink.screenColor,
+                      onTap: _handleLockIn,
+                    )
+                  else
+                    ChallengeActionButton(
+                      label: challenge.dailyFinished ? 'PLAY AGAIN' : 'NEXT ROUND',
+                      icon: challenge.dailyFinished ? Icons.replay_rounded : Icons.arrow_forward_rounded,
+                      visible: !state.isPouring,
+                      accent: drink.screenColor,
+                      onTap: _handleNextRound,
+                    ),
                   const SizedBox(height: 20),
                 ],
               ),

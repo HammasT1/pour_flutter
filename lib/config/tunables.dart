@@ -168,3 +168,22 @@ const double kIceFirstContact = 0.36;
 /// Horizontal shift (fraction of cup width) applied to the submerged
 /// part of the straw - the "bent straw" refraction break at the surface.
 const double kStrawRefractionShift = 0.045;
+
+/// ---- Challenge mode ----
+
+/// Targets are whole percentages of the cup's fillable height, drawn
+/// from this range (inclusive).
+const double kChallengeMinTarget = 0.30;
+const double kChallengeMaxTarget = 0.92;
+
+/// Rounds in a Daily challenge.
+const int kDailyRounds = 5;
+
+/// Tier thresholds: max distance (fraction of the cup) from the target.
+const double kChallengeBullseye = 0.01;
+const double kChallengeGreat = 0.03;
+const double kChallengeGood = 0.06;
+const double kChallengeOk = 0.10;
+
+/// Points fall linearly from 100 (dead on) to 0 at this error.
+const double kChallengeZeroPointsError = 0.12;
