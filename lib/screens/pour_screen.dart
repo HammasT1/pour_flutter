@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +41,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   bool _streamVisible = false;
   int _bubbleTrigger = 0;
 
-  /// Result badge above the cup ("CUP FULL" / "PERFECT POUR").
+  /// Result badge above the cup ("CUP FULL" / "PERFECT POUR" / "OVERFLOW").
   _PourBanner? _banner;
   int _bannerSerial = 0;
 
@@ -53,6 +55,17 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   int _lastHapticMs = 0;
   int _lastBubbleMs = 0;
 
+  // ---- Foam & overflow ----
+  /// Runs only while there is foam to simulate (pending, growing or
+  /// settling), then stops itself.
+  Ticker? _foamTicker;
+  Duration _lastFoamTick = Duration.zero;
+  double _pendingFoam = 0; // tap-pour foam still to form
+  double _pendingFoamDelay = 0; // seconds before pending foam starts forming
+  bool _spilledThisPour = false;
+  bool _spillCooling = false; // one spill per animation, even if foam keeps pushing
+  int _spillTrigger = 0;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +77,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   @override
   void dispose() {
     _holdTicker?.dispose();
+    _foamTicker?.dispose();
     _pageController.dispose();
     _tiltController.dispose();
     super.dispose();
@@ -86,6 +100,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   Future<void> _handleTapPour() async {
     if (!_canStartPour) return;
     final notifier = ref.read(pourStateProvider.notifier);
+    _spilledThisPour = false;
     HapticFeedback.mediumImpact();
     notifier.startPour();
     setState(() => _bubbleTrigger++);
@@ -95,7 +110,16 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
 
     notifier.applyPourFill();
     setState(() => _streamVisible = true);
-    if (ref.read(pourStateProvider).fillLevel >= 0.999) {
+
+    // The splash foams up a moment after it lands.
+    final burst = _activeDrink.fizziness * kTapFoamBurst;
+    _pendingFoam += burst;
+    _pendingFoamDelay = kTapFoamDelay.inMicroseconds / Duration.microsecondsPerSecond;
+    _ensureFoamTicker();
+
+    final after = ref.read(pourStateProvider);
+    final willOverflow = after.fillLevel + after.foamLevel + _pendingFoam > 1.0 + kSpillTolerance;
+    if (after.fillLevel >= 0.999 && !willOverflow) {
       HapticFeedback.heavyImpact();
       _showBanner(_PourBanner.full);
     }
@@ -116,6 +140,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     _holding = true;
     _holdPoured = 0;
     _holdFlow = 0;
+    _spilledThisPour = false;
     final notifier = ref.read(pourStateProvider.notifier);
     HapticFeedback.mediumImpact();
     notifier.startPour();
@@ -147,9 +172,15 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     final flow = Curves.easeIn.transform(ramp);
     final rate = kHoldFlowStartRate + (kHoldFlowMaxRate - kHoldFlowStartRate) * flow;
 
+    final notifier = ref.read(pourStateProvider.notifier);
     final before = ref.read(pourStateProvider).fillLevel;
-    final level = ref.read(pourStateProvider.notifier).addFillFraction(rate * dt);
+    final level = notifier.addFillFraction(rate * dt);
     _holdPoured += level - before;
+
+    // Pouring hard foams disproportionately more than pouring gently.
+    final foamGen = _activeDrink.fizziness * kFoamGenRate * rate * rate * dt;
+    notifier.setFoam(ref.read(pourStateProvider).foamLevel + foamGen);
+    _ensureFoamTicker();
 
     // A light tick that speeds up with the flow, so the pour is felt.
     final hapticGap = (170 - 80 * flow).round();
@@ -165,7 +196,73 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
       if (spawnBubbles) _bubbleTrigger++;
     });
 
-    if (level >= 0.999) _finishHold();
+    if (_holding && level >= 0.999) _finishHold();
+  }
+
+  DrinkModel get _activeDrink => kDrinks[ref.read(pourStateProvider).selectedDrinkIndex];
+
+  void _ensureFoamTicker() {
+    if (_foamTicker?.isActive ?? false) return;
+    _foamTicker?.dispose();
+    _lastFoamTick = Duration.zero;
+    _foamTicker = createTicker(_onFoamTick)..start();
+  }
+
+  void _stopFoamTicker() {
+    _foamTicker?.dispose();
+    _foamTicker = null;
+  }
+
+  /// One foam step: form pending tap foam, settle, and check whether
+  /// liquid + foam has gone over the rim.
+  void _onFoamTick(Duration elapsed) {
+    final dt = (elapsed - _lastFoamTick).inMicroseconds / Duration.microsecondsPerSecond;
+    _lastFoamTick = elapsed;
+
+    final state = ref.read(pourStateProvider);
+    var foam = state.foamLevel;
+
+    if (_pendingFoamDelay > 0) {
+      _pendingFoamDelay -= dt;
+    } else if (_pendingFoam > 0) {
+      final formed = math.min(_pendingFoam, kTapFoamFormRate * dt);
+      _pendingFoam -= formed;
+      foam += formed;
+    }
+
+    foam -= foam * kFoamSettleRate * dt;
+
+    final room = (1.0 - state.fillLevel).clamp(0.0, 1.0);
+    if (foam > room + kSpillTolerance) {
+      foam = room;
+      _triggerSpill();
+    }
+
+    final notifier = ref.read(pourStateProvider.notifier);
+    if (foam < 0.0005 && _pendingFoam <= 0 && !_holding) {
+      notifier.setFoam(0);
+      _stopFoamTicker();
+      return;
+    }
+    notifier.setFoam(foam);
+  }
+
+  /// Foam went over the rim: play the spill, a "whoa" haptic, and end any
+  /// hold in progress (a spilled pour can't be a perfect one).
+  void _triggerSpill() {
+    if (_spillCooling) return;
+    _spillCooling = true;
+    _spilledThisPour = true;
+    _pendingFoam = 0;
+    Future.delayed(kSpillDuration, () => _spillCooling = false);
+
+    HapticFeedback.heavyImpact();
+    Future.delayed(const Duration(milliseconds: 90), HapticFeedback.mediumImpact);
+    Future.delayed(const Duration(milliseconds: 180), HapticFeedback.lightImpact);
+
+    setState(() => _spillTrigger++);
+    _showBanner(_PourBanner.overflow);
+    if (_holding) _finishHold();
   }
 
   /// Ends a hold - on release, on cancel, or automatically when the cup
@@ -182,7 +279,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
       _holdFlow = 0;
     });
 
-    if (_holdPoured > 0) {
+    if (_holdPoured > 0 && !_spilledThisPour) {
       if (level >= 0.999) {
         HapticFeedback.heavyImpact();
         _showBanner(_PourBanner.full);
@@ -204,6 +301,7 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     final state = ref.read(pourStateProvider);
     if (state.isPouring || state.fillLevel <= 0.0) return;
     HapticFeedback.lightImpact();
+    _pendingFoam = 0;
     ref.read(pourStateProvider.notifier).emptyCup();
   }
 
@@ -220,12 +318,12 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
     final rimFromStageBottom = cupConfig.displayHeight * (1 - CupFillGeometry.topY);
     final streamLength = kPourStreamAreaHeight - 8;
 
+    final fillDuration = _holdActive ? const Duration(milliseconds: 120) : const Duration(milliseconds: 900);
+
     // Full intensity while actively pouring; once the pour finishes the
     // wash settles to an ambient level rather than disappearing, for as
     // long as the cup still holds liquid. Only a genuinely empty cup
     // (fresh size, or never poured) drops it to zero.
-    final fillDuration = _holdActive ? const Duration(milliseconds: 120) : const Duration(milliseconds: 900);
-
     final washIntensity = state.isPouring
         ? 1.0
         : (state.fillLevel > 0.001 ? kWashAmbientIntensity : 0.0);
@@ -303,6 +401,8 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
                           fillLevel: state.fillLevel,
                           fillDuration: fillDuration,
                           showPerfectZone: _holdActive,
+                          foamLevel: state.foamLevel,
+                          spillTrigger: _spillTrigger,
                         ),
                         Positioned(
                           bottom: rimFromStageBottom - 4,
@@ -376,10 +476,11 @@ class _PourScreenState extends ConsumerState<PourScreen> with TickerProviderStat
   }
 }
 
-enum _PourBanner { full, perfect }
+enum _PourBanner { full, perfect, overflow }
 
 /// The pop-in badge above the cup. "PERFECT POUR" gets a white ring and
-/// a shimmer sweep so it reads as a reward, not just a status.
+/// a shimmer sweep so it reads as a reward, not just a status;
+/// "OVERFLOW!" gets a quick shake.
 class _PourBannerBadge extends StatelessWidget {
   final _PourBanner banner;
   final Color color;
@@ -389,6 +490,12 @@ class _PourBannerBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final perfect = banner == _PourBanner.perfect;
+    final overflow = banner == _PourBanner.overflow;
+    final label = switch (banner) {
+      _PourBanner.perfect => 'PERFECT POUR',
+      _PourBanner.overflow => 'OVERFLOW!',
+      _PourBanner.full => 'CUP FULL',
+    };
     Widget badge = Container(
       padding: EdgeInsets.symmetric(horizontal: perfect ? 18 : 16, vertical: perfect ? 7 : 6),
       decoration: BoxDecoration(
@@ -400,9 +507,12 @@ class _PourBannerBadge extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (perfect) ...[const Icon(Icons.auto_awesome, size: 14, color: Colors.white), const SizedBox(width: 6)],
+          if (perfect || overflow) ...[
+            Icon(perfect ? Icons.auto_awesome : Icons.water_drop, size: 14, color: Colors.white),
+            const SizedBox(width: 6),
+          ],
           Text(
-            perfect ? 'PERFECT POUR' : 'CUP FULL',
+            label,
             style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w800, letterSpacing: 1.5),
           ),
         ],
@@ -415,6 +525,8 @@ class _PourBannerBadge extends StatelessWidget {
         .fadeIn(duration: 180.ms);
     if (perfect) {
       animated = animated.shimmer(delay: 260.ms, duration: 900.ms, color: Colors.white.withValues(alpha: 0.7));
+    } else if (overflow) {
+      animated = animated.shakeX(delay: 120.ms, duration: 420.ms, hz: 5, amount: 4);
     }
     return animated;
   }

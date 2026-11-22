@@ -8,6 +8,7 @@ import '../config/tunables.dart';
 import '../models/cup_size_config.dart';
 import '../models/drink_model.dart';
 import 'safe_asset_image.dart';
+import 'spill_overlay.dart';
 
 /// Stacks an animated liquid layer on top of the cup art, clipped to the
 /// tapered fillable region defined in [CupFillGeometry]. cup.png is a
@@ -32,6 +33,12 @@ class CupWithLiquid extends StatelessWidget {
   /// Shows the perfect-pour band near the brim (during a hold-to-pour).
   final bool showPerfectZone;
 
+  /// Foam head height on top of the liquid (fraction of fillable height).
+  final double foamLevel;
+
+  /// Bump to play the overflow animation.
+  final int spillTrigger;
+
   const CupWithLiquid({
     super.key,
     required this.drink,
@@ -39,6 +46,8 @@ class CupWithLiquid extends StatelessWidget {
     required this.fillLevel,
     this.fillDuration = const Duration(milliseconds: 900),
     this.showPerfectZone = false,
+    this.foamLevel = 0.0,
+    this.spillTrigger = 0,
   });
 
   @override
@@ -76,7 +85,7 @@ class CupWithLiquid extends StatelessWidget {
                           right: 0,
                           top: CupFillGeometry.topY * h,
                           height: (CupFillGeometry.bottomY - CupFillGeometry.topY) * h,
-                          child: _LiquidLayer(fillFraction: animatedFill, drink: drink),
+                          child: _LiquidLayer(fillFraction: animatedFill, foamFraction: foamLevel, drink: drink),
                         ),
                         Positioned(
                           left: 0,
@@ -111,6 +120,7 @@ class CupWithLiquid extends StatelessWidget {
                   ),
                 ),
               ),
+              SpillOverlay(spillTrigger: spillTrigger, liquidColor: drink.liquidColor, foamColor: drink.foamColor),
             ],
           );
         },
@@ -121,9 +131,10 @@ class CupWithLiquid extends StatelessWidget {
 
 class _LiquidLayer extends StatelessWidget {
   final double fillFraction;
+  final double foamFraction;
   final DrinkModel drink;
 
-  const _LiquidLayer({required this.fillFraction, required this.drink});
+  const _LiquidLayer({required this.fillFraction, required this.foamFraction, required this.drink});
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +150,9 @@ class _LiquidLayer extends StatelessWidget {
                 liquidColor: drink.liquidColor,
                 highlightColor: drink.highlightColor,
                 wavePhase: t * 2 * math.pi,
+                // Foam can't rise past the rim of the fillable region.
+                foamFraction: foamFraction.clamp(0.0, 1.0 - fillFraction.clamp(0.0, 1.0)),
+                foamColor: drink.foamColor,
               ),
             ),
           ),

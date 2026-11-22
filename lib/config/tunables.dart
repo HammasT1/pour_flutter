@@ -107,3 +107,36 @@ const double kWashAmbientIntensity = 0.6;
 /// translucent plastic cup rather than a flat opaque white shape - lets
 /// the background wash and the liquid underneath show through a bit.
 const double kCupOpacity = 0.62;
+
+/// ---- Foam & overflow ----
+///
+/// Foam is tracked as a fraction of the cup's fillable height, sitting on
+/// top of the liquid. Liquid + foam past the rim is an overflow.
+
+/// Upper bound on the foam head, so it never swallows the whole cup.
+const double kFoamMax = 0.25;
+
+/// Foam generated per second while hold-pouring is
+/// `fizziness * kFoamGenRate * flowRate^2` - squared so pouring hard
+/// foams disproportionately more than pouring gently.
+const double kFoamGenRate = 0.40;
+
+/// Exponential settle rate (per second): the foam head shrinks by this
+/// fraction of itself each second, so it collapses quickly at first and
+/// then lingers as a thin head.
+const double kFoamSettleRate = 1.1;
+
+/// A tap pour lands as one splash, so its foam is added as a burst
+/// ([kTapFoamBurst] x fizziness) that starts forming after
+/// [kTapFoamDelay] (when the liquid has visually arrived) at
+/// [kTapFoamFormRate] per second.
+const double kTapFoamBurst = 0.12;
+const Duration kTapFoamDelay = Duration(milliseconds: 350);
+const double kTapFoamFormRate = 0.5;
+
+/// How far liquid + foam may poke past the rim before it counts as a
+/// spill (absorbs float noise right at the brim).
+const double kSpillTolerance = 0.004;
+
+/// Length of the spill animation (foam cap, drips, puddle).
+const Duration kSpillDuration = Duration(milliseconds: 1600);

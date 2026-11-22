@@ -13,11 +13,16 @@ class PourState {
   final double fillLevel;
   final bool isPouring;
 
+  /// 0.0-[kFoamMax], foam head height on top of [fillLevel], in the same
+  /// units (fraction of the cup's fillable height).
+  final double foamLevel;
+
   const PourState({
     this.selectedDrinkIndex = 0,
     this.selectedCupSize = CupSize.medium,
     this.fillLevel = 0.0,
     this.isPouring = false,
+    this.foamLevel = 0.0,
   });
 
   PourState copyWith({
@@ -25,12 +30,14 @@ class PourState {
     CupSize? selectedCupSize,
     double? fillLevel,
     bool? isPouring,
+    double? foamLevel,
   }) {
     return PourState(
       selectedDrinkIndex: selectedDrinkIndex ?? this.selectedDrinkIndex,
       selectedCupSize: selectedCupSize ?? this.selectedCupSize,
       fillLevel: fillLevel ?? this.fillLevel,
       isPouring: isPouring ?? this.isPouring,
+      foamLevel: foamLevel ?? this.foamLevel,
     );
   }
 }
@@ -48,7 +55,7 @@ class PourStateNotifier extends StateNotifier<PourState> {
   /// sizes since capacity has changed.
   void selectCupSize(CupSize size) {
     if (state.isPouring || size == state.selectedCupSize) return;
-    state = state.copyWith(selectedCupSize: size, fillLevel: 0.0);
+    state = state.copyWith(selectedCupSize: size, fillLevel: 0.0, foamLevel: 0.0);
   }
 
   void startPour() {
@@ -76,6 +83,14 @@ class PourStateNotifier extends StateNotifier<PourState> {
     return next;
   }
 
+  /// Foam is simulated frame-by-frame by the pour screen; this just
+  /// stores the result (clamped to [0, kFoamMax]).
+  void setFoam(double foam) {
+    final next = foam.clamp(0.0, kFoamMax);
+    if (next == state.foamLevel) return;
+    state = state.copyWith(foamLevel: next);
+  }
+
   void endPour() {
     state = state.copyWith(isPouring: false);
   }
@@ -85,7 +100,7 @@ class PourStateNotifier extends StateNotifier<PourState> {
   /// switching sizes.
   void emptyCup() {
     if (state.isPouring || state.fillLevel <= 0.0) return;
-    state = state.copyWith(fillLevel: 0.0);
+    state = state.copyWith(fillLevel: 0.0, foamLevel: 0.0);
   }
 }
 

@@ -77,20 +77,4 @@ void main() {
     expect(find.text('PERFECT POUR'), findsNothing);
     await tearDownApp(tester);
   });
-
-  testWidgets('holding past the brim auto-stops at full', (tester) async {
-    await pumpApp(tester);
-    final gesture = await tester.startGesture(bottleCenter(tester));
-    await tester.pump(kHoldToPourDelay + const Duration(milliseconds: 20));
-    for (var i = 0; i < 400 && fill() < 0.999; i++) {
-      await tester.pump(const Duration(milliseconds: 16));
-    }
-    await tester.pump(const Duration(milliseconds: 50));
-    expect(fill(), 1.0);
-    expect(find.text('CUP FULL'), findsOneWidget);
-    await gesture.up();
-    await tester.pump(kHoldTiltOutDuration + const Duration(milliseconds: 50));
-    expect(container.read(pourStateProvider).isPouring, isFalse);
-    await tearDownApp(tester);
-  });
 }
