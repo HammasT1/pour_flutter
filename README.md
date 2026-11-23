@@ -3,7 +3,7 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&height=240&color=0:FF6B00,50:E91E63,100:7B1FA2&text=Pour&fontColor=ffffff&fontSize=80&fontAlignY=36&animation=fadeIn&desc=A%20dark%2C%20animation-driven%20drink-pouring%20experience&descSize=18&descAlignY=58" alt="Pour" width="100%" />
 
 <a href="https://github.com/HammasT1/pour_flutter">
-  <img src="https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=600&size=22&duration=3000&pause=900&color=FF6B00&center=true&vCenter=true&width=620&lines=Swipe+through+the+bottles+%F0%9F%A5%A4;Pick+a+cup+size+%F0%9F%93%8F;Tap+to+pour+%E2%80%94+watch+it+fill+%F0%9F%AB%97;Built+with+Flutter+%26+Riverpod+%F0%9F%92%99" alt="Typing animation" />
+  <img src="https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=600&size=22&duration=3000&pause=900&color=FF6B00&center=true&vCenter=true&width=620&lines=Swipe+through+the+bottles+%F0%9F%A5%A4;Hold+for+a+perfect+pour+%F0%9F%AB%97;Add+ice+%26+a+straw+%F0%9F%A7%8A;Hit+the+line+in+the+Daily+challenge+%F0%9F%8E%AF;Built+with+Flutter+%26+Riverpod+%F0%9F%92%99" alt="Typing animation" />
 </a>
 
 <br/>
@@ -26,23 +26,37 @@
 
 <br/>
 
-> Swipe through bottles, pick a cup size, tap to pour — watch the cup fill, the screen wash in the drink's color, and bubbles rise like a cold-drink ad.
+> Swipe through bottles, pick a cup size, tap or hold to pour — watch the cup fill and foam, the screen wash in the drink's color, and bubbles rise like a cold-drink ad. Add ice and a straw, try not to overflow, then test your aim in Practice and Daily challenge modes.
 
 ---
 
 ## 🎬 Demo
 
+<p align="center">
+  <img src="assets/screenshots/demo.gif" width="280" alt="Pour demo: hold-to-pour, ice and straw, overflow, a Practice round and the drink showcase" />
+</p>
+
+<p align="center"><sub>Hold-to-pour → ice &amp; straw → overflow → a Practice round → the drink showcase</sub></p>
+
+### 📸 Screenshots
+
 <table align="center">
   <tr>
-    <td align="center" width="33%"><img src="assets/carousel.png" width="220" /><br/><sub><b>Pick a drink</b></sub></td>
-    <td align="center" width="33%"><img src="assets/pour.png" width="220" /><br/><sub><b>Tap to pour</b></sub></td>
-    <td align="center" width="33%"><img src="assets/fill_screen.png" width="220" /><br/><sub><b>Color wash</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/01_home.png" width="220" alt="Home screen" /><br/><sub><b>Pick a drink</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/02_hold_to_pour.png" width="220" alt="Hold to pour" /><br/><sub><b>Hold to pour</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/03_color_wash.png" width="220" alt="Full cup with color wash" /><br/><sub><b>Color wash</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="assets/screenshots/04_perfect_pour.png" width="220" alt="Perfect pour badge" /><br/><sub><b>Perfect pour</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/05_overflow.png" width="220" alt="Foam overflow" /><br/><sub><b>Foam &amp; overflow</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/06_ice_and_straw.png" width="220" alt="Ice cubes and bendy straw" /><br/><sub><b>Ice &amp; straw</b></sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="33%"><img src="assets/screenshots/07_practice.png" width="220" alt="Practice mode target line" /><br/><sub><b>Practice: fill to the line</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/08_daily_bullseye.png" width="220" alt="Daily challenge bullseye" /><br/><sub><b>Daily: BULLSEYE</b></sub></td>
+    <td align="center" width="33%"><img src="assets/screenshots/09_showcase.png" width="220" alt="Drink showcase" /><br/><sub><b>Drink showcase</b></sub></td>
   </tr>
 </table>
-
-<p align="center">
-  <img src="https://github.com/HammasT1/pour_flutter/blob/main/assets/pour_flutter-GIF.gif?raw=true" width="280" alt="Pour demo" />
-</p>
 
 <details>
 <summary><b>📑 Table of Contents</b></summary>
@@ -86,7 +100,9 @@
 | Framework | [Flutter](https://flutter.dev) (Dart) |
 | State management | [flutter_riverpod](https://pub.dev/packages/flutter_riverpod) — a single `StateNotifier` as the source of truth |
 | Animation | [flutter_animate](https://pub.dev/packages/flutter_animate) for readable animation chains, plus hand-rolled `AnimationController`s for the tilt/pour sequence where precise curve/timing control was needed |
-| Custom rendering | `CustomPainter` for the liquid's sine-wave surface, `CustomClipper` for the tapered cup fill region |
+| Transitions | [animations](https://pub.dev/packages/animations) for Material shared-axis transitions, plus `Hero` for the bottle/badge flight into the showcase |
+| Custom rendering | `CustomPainter` for the liquid's sine-wave surface, foam, ice, straw and spill drips; `CustomClipper` for the tapered cup fill region |
+| Persistence | [shared_preferences](https://pub.dev/packages/shared_preferences) for best streak and today's best Daily score |
 | Typography | [google_fonts](https://pub.dev/packages/google_fonts) (Space Grotesk + Outfit) |
 | Haptics | `flutter/services` `HapticFeedback` |
 | Testing | `flutter_test` |
@@ -104,13 +120,16 @@ lib/
 │   ├── drink_model.dart             # The drink lineup: name, art, liquid color, screen color
 │   └── cup_size_config.dart         # S/M/L sizing, scale, and capacity
 ├── providers/
-│   └── pour_state_provider.dart     # Riverpod StateNotifier — the single source of truth
+│   ├── pour_state_provider.dart     # Riverpod StateNotifier — cup, pour, foam, ice & straw state
+│   └── challenge_provider.dart      # Free / Practice / Daily modes, scoring, streaks, saved bests
 ├── animations/
 │   ├── liquid_surface_painter.dart  # Sine-wave liquid surface + foam strip
 │   └── cup_trapezoid_clipper.dart   # Tapered clip region matching the cup art
-├── widgets/                         # Presentational widgets (carousel, cup, bubbles, nav bar, ...)
+├── widgets/                         # Presentational widgets (carousel, cup, ice & straw, spill,
+│                                    #   challenge HUD/result cards, bubbles, nav bar, ...)
 └── screens/
-    └── pour_screen.dart             # Composes everything, orchestrates the pour sequence
+    ├── pour_screen.dart             # Composes everything, orchestrates the pour sequence
+    └── drink_detail_screen.dart     # Full-screen drink showcase (Hero + shared-axis)
 ```
 
 ---
@@ -248,11 +267,20 @@ State lives in one Riverpod `StateNotifier`, `pourStateProvider`
 - `selectedCupSize` — `CupSize.small` / `.medium` / `.large`
 - `fillLevel` — 0.0–1.0, relative to the *current* size's capacity
 - `isPouring` — true for the duration of the tilt/stream/fill animation
+- `foamLevel` — the foam head sitting on top of the liquid; liquid + foam past the rim is an overflow
+- `iceCubes` / `hasStraw` — the cup extras
 
 Widgets read it via `ref.watch(pourStateProvider)` and mutate it only
 through the notifier's methods (`selectDrink`, `selectCupSize`,
-`startPour`, `applyPourFill`, `endPour`, `emptyCup`) — there's no direct
-field mutation anywhere else.
+`startPour`, `applyPourFill`, `setFoam`, `addIce`, `toggleStraw`,
+`endPour`, `emptyCup`) — there's no direct field mutation anywhere else.
+
+Challenge state lives in a separate provider
+(`lib/providers/challenge_provider.dart`): the current mode, target,
+round, last result, streaks and the Daily results. Daily targets are
+seeded from the date, so everyone gets the same five on the same day.
+`setMode`, `lockIn`, `recordSpill` and `nextRound` drive it, and the best
+streak and today's best Daily score are saved with `shared_preferences`.
 
 `PourScreen` (`lib/screens/pour_screen.dart`) is the only place that owns
 animation controllers (the bottle tilt) and orchestrates a pour:
