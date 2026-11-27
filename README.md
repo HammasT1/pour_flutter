@@ -14,7 +14,12 @@
 ![Platform](https://img.shields.io/badge/Android%20%7C%20Web%20%7C%20Windows-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Status](https://img.shields.io/badge/Status-In%20Development-F9A825?style=for-the-badge)
 
+<a href="https://github.com/HammasT1/pour_flutter/releases/latest">
+  <img src="https://img.shields.io/github/v/release/HammasT1/pour_flutter?style=for-the-badge&logo=android&logoColor=white&label=Download%20APK&color=FF6B00" alt="Download the latest APK" />
+</a>
+
 <p>
+  <a href="#-download"><b>Download</b></a> ·
   <a href="#-demo"><b>Demo</b></a> ·
   <a href="#-features"><b>Features</b></a> ·
   <a href="#-getting-started"><b>Get Started</b></a> ·
@@ -27,6 +32,12 @@
 <br/>
 
 > Swipe through bottles, pick a cup size, tap or hold to pour — watch the cup fill and foam, the screen wash in the drink's color, and bubbles rise like a cold-drink ad. Add ice and a straw, try not to overflow, then test your aim in Practice and Daily challenge modes.
+
+---
+
+## 📥 Download
+
+Grab the latest Android APK from the **[Releases page](https://github.com/HammasT1/pour_flutter/releases/latest)**: open it on your phone, download `pour_flutter-vX.Y.Z.apk` and install it. You may need to allow installs from unknown sources.
 
 ---
 
